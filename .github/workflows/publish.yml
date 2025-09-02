@@ -12,10 +12,35 @@ on:
 permissions: read-all
 
 jobs:
+
+  discovery:
+    runs-on: ubuntu-latest
+
+    outputs:
+      packages: ${{ steps.discovery.outputs.packages }}
+    
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Identify packages from directory
+      id: discovery
+      run: |
+        packages=$(ls packages | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')
+        echo "packages=$packages" >> $GITHUB_OUTPUT
+
+    - run: |
+        echo "${{ steps.discovery.outputs.packages }}"
   deploy:
     runs-on: ubuntu-latest
 
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: discovery
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package_name: ${{ fromJSON(needs.discovery.outputs.packages) }}
 
     permissions:
       contents: write
@@ -50,17 +75,17 @@ jobs:
 
       - name: Build package
         run: |
-          uv build
+          uv build --package ${{ matrix.package_name }}
 
       - name: Determine Target Version
         id: version
         run: |
-          package_version=$(uv run semantic-release -v version --print)
+          package_version=$(uv run --directory packages/${{ matrix.package_name }} semantic-release -v version --print)
           echo "PACKAGE_VERSION=$package_version" >> $GITHUB_ENV
 
       - name: Create Git Tag
         run: |
-          git tag "v${{ env.PACKAGE_VERSION }}" $(git log -1 --pretty=format:"%H" --no-merges)
+          git tag "${{ matrix.package_name }}-${{ env.PACKAGE_VERSION }}" $(git log -1 --pretty=format:"%H" --no-merges)
           git push origin --tags
 
       - uses: actions/setup-node@v4
@@ -68,11 +93,11 @@ jobs:
       - name: Extract Changelog for current version
         run: |
           npm install -g changelog-parser
-          changelog-parser CHANGELOG.md | jq -r ".versions[0].body" >> changelog_body.md
+          changelog-parser packages/${{ matrix.package_name }}/CHANGELOG.md | jq -r ".versions[0].body" >> changelog_body.md
 
       - name: Create Github release
         uses: ncipollo/release-action@v1
         with:
-          tag: "v${{ env.PACKAGE_VERSION }}"
+          tag: "${{ matrix.package_name }}-${{ env.PACKAGE_VERSION }}"
           bodyFile: "changelog_body.md"
           artifacts: "dist/*"
