@@ -1,0 +1,37 @@
+[tool.uv.sources]
+api = { workspace = true }
+frontend = { workspace = true }
+core = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv]
+default-groups = [
+    "dev",
+]
+
+[dependency-groups]
+test = [
+    "pytest==8.4.1",
+    "pytest-cov==6.2.1",
+    "pytest-recording==0.13.4",
+    "syrupy==4.9.1",
+]
+lint = [
+    "pre-commit==4.3.0",
+    "pre-commit-uv==4.1.4",
+]
+versioning = [
+    "python-semantic-release==10.3.1",
+]
+dev = [
+    "uv==0.8.9",
+    "poethepoet==0.37.0",
+    "joblib-stubs==1.5.0.1.20250510",
+]
+
+[tool.poe.tasks]
+format = "uv run pre-commit run --verbose"
+docker-build = "docker buildx build --progress plain --tag app ."
+docker-run = "docker container run --env-file .env --publish 8000:8000 --publish 10000:10000 app"

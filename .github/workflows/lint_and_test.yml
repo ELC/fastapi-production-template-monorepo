@@ -1,0 +1,205 @@
+name: Lint and Test
+
+on:
+  push:
+    branches:
+      - master
+
+  pull_request:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+
+    outputs:
+      packages: ${{ steps.discovery.outputs.packages }}
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Identify packages from directory
+      id: discovery
+      run: |
+        packages=$(ls packages | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')
+        echo "packages=$packages" >> $GITHUB_OUTPUT
+
+    - run: |
+        echo "${{ steps.discovery.outputs.packages }}"
+
+  versioning:
+    runs-on: ubuntu-latest
+  
+    needs: discovery
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package_name: ${{ fromJSON(needs.discovery.outputs.packages) }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+        fetch-tags: true
+
+    - name: Set Git Identity
+      run: |
+        git fetch -v -v -v --all --unshallow
+        git switch "${{ github.REF_NAME }}" || git switch "${{ github.HEAD_REF }}"
+        git config --global user.email "$(git log -1 --pretty=format:'%ae' | xargs)"
+        git config --global user.name "${{ github.actor }}"
+        git remote set-url origin "https://github.com/${{ github.repository }}"
+        git remote set-url origin "https://${{ github.actor }}:${{ secrets.PUSH_TOKEN }}@github.com/${{ github.repository }}"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.8.9"
+
+    - name: Install Dependencies
+      run: |
+        uv python install
+        uv sync --group versioning
+
+    - name: Update Version and Changelog
+      run: |
+        uv run --frozen --no-sync --directory "packages/${{ matrix.package_name }}" poe version-bump
+        uv lock
+
+        differences=$(git diff | xargs)
+
+        if [ -z "$differences" ]; then
+          echo "No changes needed"
+          exit 0
+        fi
+
+        echo "::error::The version and/or Changelog is outdated"
+        echo "$differences"
+
+        git add --all
+        git commit -m "chore(${{ matrix.package_name }}-release): bump version and update changelog"
+        git push
+
+        sleep 30
+        exit 1
+
+  lint:
+    runs-on: ubuntu-latest
+
+    needs: discovery
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package_name: ${{ fromJSON(needs.discovery.outputs.packages) }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+        fetch-tags: true
+
+    - name: Set Git Identity
+      run: |
+        git fetch -v -v -v --all --unshallow
+        git switch "${{ github.REF_NAME }}" || git switch "${{ github.HEAD_REF }}"
+        git config --global user.email "$(git log -1 --pretty=format:'%ae' | xargs)"
+        git config --global user.name "${{ github.actor }}"
+        git remote set-url origin "https://github.com/${{ github.repository }}"
+        git remote set-url origin "https://${{ github.actor }}:${{ secrets.PUSH_TOKEN }}@github.com/${{ github.repository }}"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.8.9"
+
+    - name: Install Dependencies
+      run: |
+        uv python install
+        uv sync --group lint
+
+    - name: Run Linter
+      run: |
+        uv run --frozen --no-sync poe format --files "packages/${{ matrix.package_name }}/*"
+
+    - name: Update Results if Needed
+      if: ${{ !cancelled() }}
+      run: |
+        differences=$(git diff | xargs)
+
+        if [ -z "$differences" ]; then
+          echo "No changes needed"
+          exit 0
+        fi
+
+        echo "::error::The linter changed some files"
+        echo "$differences"
+
+        git add --all
+        git commit -m "chore(format): apply lint fixes"
+        git push
+
+        sleep 30
+        exit 1
+
+  test:
+    runs-on: ubuntu-latest
+
+    needs: discovery
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package_name: ${{ fromJSON(needs.discovery.outputs.packages) }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        version: "0.8.9"
+
+    - name: Install Dependencies
+      run: |
+        uv python install
+        uv sync --group test
+
+    - name: Run Tests
+      run: |
+        uv run --frozen --no-sync --directory "packages/${{ matrix.package_name }}" poe test
+
+    - name: Test Report
+      uses: dorny/test-reporter@v2
+      if: ${{ !cancelled() }}
+      with:
+        name: Pytests Tests
+        path: packages/${{ matrix.package_name }}/pytest-report.xml
+        reporter: jest-junit
+
+    - name: SonarQube Scan
+      uses: SonarSource/sonarqube-scan-action@v5
+      if: ${{ !cancelled() }}
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      with:
+        args: >
+          -Dsonar.organization=elc-github
+          -Dsonar.projectKey=elc-github_fastapi-production-template-${{ matrix.package_name }}
+          -Dsonar.python.coverage.reportPaths=packages/${{ matrix.package_name }}/coverage.xml
+          -Dsonar.python.version=3.12
+          -Dsonar.sources=packages/${{ matrix.package_name }}/src
+          -Dsonar.tests=packages/${{ matrix.package_name }}/tests
+          -Dsonar.python.xunit.reportPath=packages/${{ matrix.package_name }}/pytest-report.xml
+          -Dsonar.coverage.exclusions="**/__main__.py, src/api/__init__.py, src/frontend/**, src/api/settings.py, src/frontend/settings.py, src/core/settings.py"
+
+    - name: Check Coverage
+      run: |
+        uv run --frozen --no-sync --directory "packages/${{ matrix.package_name }}" poe check-coverage
