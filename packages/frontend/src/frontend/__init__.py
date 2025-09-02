@@ -24,3 +24,5 @@ def run_streamlit() -> None:
 
 
 __all__ = ["run_streamlit"]
+
+__version__ = "0.1.2"
