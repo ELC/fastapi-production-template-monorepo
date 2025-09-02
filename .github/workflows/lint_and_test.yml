@@ -75,7 +75,7 @@ jobs:
         push: false
         tag: false
         directory: "packages/${{ matrix.package_name }}"
-        verbosity: 3
+        verbosity: 2
 
     - name: Update Version and Changelog
       run: |
