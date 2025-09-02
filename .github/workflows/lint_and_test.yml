@@ -74,7 +74,6 @@ jobs:
         changelog: true
         push: false
         tag: false
-        config_file: "packages/${{ matrix.package_name }}/pyproject.toml"
         directory: "packages/${{ matrix.package_name }}"
         verbosity: 3
 
