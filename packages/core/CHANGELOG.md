@@ -2,16 +2,15 @@
 
 <!-- version list -->
 
-## v0.1.0 (2025-09-02)
-
-- Initial Release
-
-## v0.1.1 (2025-09-02)
+## v0.1.2 (2025-09-02)
 
 ### Bug Fixes
 
-- **core**: Bump core version
-  ([`72966d4`](https://github.com/ELC/fastapi-production-template/commit/72966d4ca840f20311f53a051b21cf40ab6547df))
+- **core**: Test release
+  ([`cd3e30c`](https://github.com/ELC/fastapi-production-template-monorepo/commit/cd3e30ca3da36ba8426b7c54a41308311f9d4149))
+
+
+## v0.1.1 (2025-09-02)
 
 
 ## v0.1.0 (2025-09-02)
