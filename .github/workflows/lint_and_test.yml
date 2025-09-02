@@ -66,6 +66,11 @@ jobs:
         uv python install
         uv sync --group versioning
 
+    - name: Clear Changelog
+      run: |
+        rm --force packages/${{ matrix.package_name }}/CHANGELOG.md
+        touch packages/${{ matrix.package_name }}/CHANGELOG.md
+
     - name: Python Semantic Release
       uses: python-semantic-release/python-semantic-release@v10.3.1
       with:
