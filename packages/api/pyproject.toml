@@ -1,6 +1,6 @@
 [project]
 name = "api"
-version = "0.1.0"
+version = "0.1.1"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -43,6 +43,9 @@ commit_message = "chore(release): bump version of api"
 tag_format = "api-{version}"
 version_source = "tag"
 version_variables = ["src/api/__init__.py:__version__"]
+version_toml = [
+    "pyproject.toml:project.version:nf",
+]
 allow_zero_version = true
 
 [tool.semantic_release.changelog]
