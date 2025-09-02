@@ -39,7 +39,7 @@ match = "*"
 
 [tool.semantic_release]
 commit_parser = "../../scripts/monorepo_parser.py:ConventionalCommitMonorepoParser"
-commit_message = "chore(release): bump version of api"
+commit_message = "chore(api-release): bump version of api"
 tag_format = "api-{version}"
 version_source = "tag"
 version_variables = ["src/api/__init__.py:__version__"]
