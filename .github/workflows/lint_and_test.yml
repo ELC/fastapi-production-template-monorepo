@@ -66,9 +66,20 @@ jobs:
         uv python install
         uv sync --group versioning
 
+    - name: Python Semantic Release
+      uses: python-semantic-release/python-semantic-release@v10.3.1
+      with:
+        commit: false
+        build: false
+        changelog: true
+        push: false
+        tag: false
+        config_file: "packages/${{ matrix.package_name }}/pyproject.toml"
+        directory: "packages/${{ matrix.package_name }}"
+        verbosity: 3
+
     - name: Update Version and Changelog
       run: |
-        uv run --frozen --no-sync --directory "packages/${{ matrix.package_name }}" poe version-bump
         uv lock
 
         differences=$(git diff | xargs)
