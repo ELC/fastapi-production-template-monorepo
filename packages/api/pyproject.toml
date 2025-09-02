@@ -1,6 +1,6 @@
 [project]
 name = "api"
-version = "0.1.2"
+version = "0.1.3"
 description = "Add your description here"
 readme = "README.md"
 authors = [
@@ -28,7 +28,7 @@ build-backend = "uv_build"
 [tool.poe.tasks]
 test = "uv run pytest"
 check-coverage = "uv run coverage report --fail-under=80"
-version-bump = "uv run semantic-release -v version --no-tag --no-commit --skip-build --changelog"
+version-bump = "uv run semantic-release -v version --no-tag --no-push --skip-build --changelog"
 
 #########################
 # Semantic Release

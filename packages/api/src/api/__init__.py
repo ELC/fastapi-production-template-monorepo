@@ -15,4 +15,4 @@ def run_api() -> None:
 
 __all__ = ["create_app", "run_api"]
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
