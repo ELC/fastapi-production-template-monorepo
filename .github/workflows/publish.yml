@@ -32,10 +32,12 @@ jobs:
 
     - run: |
         echo "${{ steps.discovery.outputs.packages }}"
-  deploy:
+  publish:
     runs-on: ubuntu-latest
 
     needs: discovery
+
+    continue-on-error: true
 
     strategy:
       fail-fast: false
