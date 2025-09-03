@@ -2,7 +2,7 @@
 
 <!-- version list -->
 
-## v0.2.0 (2025-09-03)
+## v0.1.3 (2025-09-03)
 
 ### Bug Fixes
 
@@ -12,10 +12,8 @@
 - **api**: Bump patch in api
   ([`5dcb531`](https://github.com/ELC/fastapi-production-template-monorepo/commit/5dcb531c3320215172021c448687c1192df0df12))
 
-### Features
-
 - **api**: Bump patch in api 4
-  ([`38a1c88`](https://github.com/ELC/fastapi-production-template-monorepo/commit/38a1c88ed9cbeadf44a9dbb900f1d91a9fabbbcf))
+  ([`9474d2c`](https://github.com/ELC/fastapi-production-template-monorepo/commit/9474d2ca7cec5615f5ad5d5213801c1d29a666df))
 
 
 ## v0.1.2 (2025-09-02)
