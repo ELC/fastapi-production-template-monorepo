@@ -68,6 +68,7 @@ jobs:
 
     - name: Update Version and Changelog
       run: |
+        rm --force packages/${{ matrix.package_name }}/CHANGELOG.md
         uv run --frozen --no-sync --directory "packages/${{ matrix.package_name }}" poe version-bump
         uv lock
 
